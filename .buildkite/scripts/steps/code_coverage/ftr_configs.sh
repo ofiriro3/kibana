@@ -50,7 +50,7 @@ while read -r config; do
   # prevent non-zero exit code from breaking the loop
   set +e
   NODE_OPTIONS=--max_old_space_size=14336 \
-    ./../node_modules/.bin/nyc \
+    ./node_modules/.bin/nyc \
     --nycrc-path ./../src/dev/code_coverage/nyc_config/nyc.server.config.js \
     node scripts/functional_tests \
     --config="$config" \
