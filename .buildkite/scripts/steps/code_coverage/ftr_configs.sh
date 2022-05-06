@@ -51,7 +51,7 @@ while read -r config; do
   set +e
   NODE_OPTIONS=--max_old_space_size=14336 \
     ./node_modules/.bin/nyc \
-    --nycrc-path ./../src/dev/code_coverage/nyc_config/nyc.server.config.js \
+    --nycrc-path ./src/dev/code_coverage/nyc_config/nyc.server.config.js \
     node scripts/functional_tests \
     --config="$config" \
     --exclude-tag "skipCoverage"
