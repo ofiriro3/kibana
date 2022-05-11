@@ -48,13 +48,17 @@ while read -r config; do
   lastCode=$?
   set -e
 
+  dasherize () {
+   withoutExtension=${1%.*}
+   dasherized=$(echo "$withoutExtension" | tr '\/' '\-')
+  }
+  dasherize $config
+
   # Server side and client side (server and public dirs)
   if [[ -d "$KIBANA_DIR/target/kibana-coverage/server" ]]; then
     echo "--- Server side code coverage collected"
     mkdir -p target/kibana-coverage/functional
-    # TODO: Instead of the date interpolation, we will use a dasherized config name like:
-    # Example: "target/kibana-coverage/functional/x-pack-plugins-synthetics-coverage.json"
-    mv target/kibana-coverage/server/coverage-final.json "target/kibana-coverage/functional/xpack-$(date +%s%3N)-server-coverage.json"
+    mv target/kibana-coverage/server/coverage-final.json "target/kibana-coverage/functional/xpack-${dasherized}-server-coverage.json"
   fi
 
   # Each browser unload event, creates a new coverage file.
@@ -63,9 +67,7 @@ while read -r config; do
     echo "--- Merging code coverage for FTR Config: $config"
     yarn nyc report --nycrc-path src/dev/code_coverage/nyc_config/nyc.functional.config.js --reporter json
     rm -rf target/kibana-coverage/functional/*
-    # TODO: Instead of the date interpolation, we will use a dasherized config name like:
-    # "target/kibana-coverage/functional/x-pack-plugins-synthetics-coverage.json"
-    mv target/kibana-coverage/functional-combined/coverage-final.json "target/kibana-coverage/functional/xpack-$(date +%s%3N)-coverage.json"
+    mv target/kibana-coverage/functional-combined/coverage-final.json "target/kibana-coverage/functional/xpack-${dasherized}-coverage.json"
   else
     echo "--- Code coverage not found"
   fi
