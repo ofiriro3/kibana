@@ -104,4 +104,5 @@ echo "--- FTR configs complete"
 printf "%s\n" "${results[@]}"
 echo ""
 
-exit $exitCode
+# Force exit 0 to ensure the next build step starts.
+exit 0
