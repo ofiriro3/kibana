@@ -20,16 +20,6 @@ exitCode=0
 
 configs="${FTR_CONFIG:-}"
 
-# The first retry should only run the configs that failed in the previous attempt
-# Any subsequent retries, which would generally only happen by someone clicking the button in the UI, will run everything
-if [[ ! "$configs" && "${BUILDKITE_RETRY_COUNT:-0}" == "1" ]]; then
-  configs=$(buildkite-agent meta-data get "$FAILED_CONFIGS_KEY" --default '')
-  if [[ "$configs" ]]; then
-    echo "--- Retrying only failed configs"
-    echo "$configs"
-  fi
-fi
-
 if [[ "$configs" == "" ]]; then
   echo "--- downloading ftr test run order"
   buildkite-agent artifact download ftr_run_order.json .
@@ -44,7 +34,7 @@ while read -r config; do
     continue
   fi
 
-  echo "--- $ node scripts/functional_tests --bail --config $config"
+  echo "--- $ node scripts/functional_tests --config $config --exclude-tag ''skipCoverage''"
   start=$(date +%s)
 
   # prevent non-zero exit code from breaking the loop
@@ -58,16 +48,23 @@ while read -r config; do
   lastCode=$?
   set -e
 
+  # Server side and client side (server and public dirs)
   if [[ -d "$KIBANA_DIR/target/kibana-coverage/server" ]]; then
     echo "--- Server side code coverage collected"
     mkdir -p target/kibana-coverage/functional
+    # TODO: Instead of the date interpolation, we will use a dasherized config name like:
+    # Example: "target/kibana-coverage/functional/x-pack-plugins-synthetics-coverage.json"
     mv target/kibana-coverage/server/coverage-final.json "target/kibana-coverage/functional/xpack-$(date +%s%3N)-server-coverage.json"
   fi
 
+  # Each browser unload event, creates a new coverage file.
+  # So, we merge them here.
   if [[ -d "$KIBANA_DIR/target/kibana-coverage/functional" ]]; then
     echo "--- Merging code coverage for FTR Config: $config"
     yarn nyc report --nycrc-path src/dev/code_coverage/nyc_config/nyc.functional.config.js --reporter json
     rm -rf target/kibana-coverage/functional/*
+    # TODO: Instead of the date interpolation, we will use a dasherized config name like:
+    # "target/kibana-coverage/functional/x-pack-plugins-synthetics-coverage.json"
     mv target/kibana-coverage/functional-combined/coverage-final.json "target/kibana-coverage/functional/xpack-$(date +%s%3N)-coverage.json"
   else
     echo "--- Code coverage not found"
